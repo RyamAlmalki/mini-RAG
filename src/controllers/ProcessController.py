@@ -1,0 +1,75 @@
+from .BaseController import BaseController
+from .ProjectController import ProjectController
+import os
+from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import PyMuPDFLoader
+from models import ProcessingEnum
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,  # This ensures .info() logs will show
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+
+class ProcessController(BaseController):
+   
+    def __init__(self, project_id:str):
+      super().__init__()
+      self.project_id = project_id
+      self.project_path = ProjectController().get_project_path(project_id)
+
+    def get_file_extension(self, file_path: str):
+        return os.path.splitext(file_path)[-1]
+    
+    def get_file_loader(self, file_id: str):
+        
+        file_path = os.path.join(self.project_path, file_id)
+
+        file_extension = self.get_file_extension(file_path)
+        
+        logger.info(f"{file_extension}")
+        
+        if file_extension == ProcessingEnum.TXT.value:
+            return TextLoader(file_path, encoding='utf-8')
+        elif file_extension == ProcessingEnum.PDF.value:
+            return PyMuPDFLoader(file_path)
+        
+        return None
+
+    def get_file_content(self, file_id: str):
+        loader = self.get_file_loader(file_id)
+
+        if loader:
+            documents = loader.load()
+            return documents
+
+    def process_file_content(self, file_contents: list, file_id: str, chunk_size: int = 100, chunk_overlap: int = 20):
+       
+        if file_contents is None or len(file_contents) == 0:
+            return None
+       
+        text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                length_function=len
+        )
+
+        file_contents_texts = [
+            record.page_content
+            for record in file_contents 
+        ]
+    
+        file_contents_metadata = [
+           record.metadata
+           for record in file_contents 
+        ]
+
+        chunks = text_splitter.create_documents(
+            file_contents_texts,
+            metadatas=file_contents_metadata # This helps me to keep the metadata for each chunk
+        )
+
+        return chunks
