@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from routes import base, data
+# motor is like a wrapper for pymongo, but for async
 from motor.motor_asyncio import AsyncIOMotorClient
 from helper.config import get_settings
 from contextlib import asynccontextmanager

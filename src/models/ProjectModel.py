@@ -2,10 +2,32 @@ from .BaseDataModel import BaseDataModel
 from .db_schemes.project import Project
 from .enums.DataBaseEnum import DataBaseEnum
 
+# note you cant have a async function in __init_ method, so we use a class method to create an instance
+
 class ProjectModel(BaseDataModel):
     def __init__(self, db_client: object):
         super().__init__(db_client=db_client)
         self.collection = self.db_client[DataBaseEnum.COLLECTION_PROJECT_NAME.value]
+
+    @classmethod 
+    async def create_instance(cls, db_client: object):
+        instance = cls(db_client=db_client) # this will call the __init__ method
+        await instance.init_collection()
+        return instance
+
+    async def init_collection(self):
+        all_collections = await self.db_client.list_collection_names()
+        if DataBaseEnum.COLLECTION_PROJECT_NAME.value not in all_collections:
+            self.collection = await self.db_client.create_collection(DataBaseEnum.COLLECTION_PROJECT_NAME.value)
+            indexes = Project.get_indexes()
+            
+            for index in indexes:
+                await self.collection.create_index(
+                    index["key"], 
+                    unique=index["unique"], 
+                    name=index["name"]
+            )
+
 
     async def create_project(self, project: Project):
         
