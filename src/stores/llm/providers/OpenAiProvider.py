@@ -75,7 +75,7 @@ class OpenAiProvider(LLMInterface):
     def construct_prompt(self, prompt: str, role: str):
         return {
             "role": role,
-            "content": [self.process_text(prompt)]
+            "content": [self]
         }
     
 
@@ -90,7 +90,7 @@ class OpenAiProvider(LLMInterface):
         
         response = self.client.embeddings.create(
             model=self.embedding_model_id,
-            input=text
+            input=[self.process_text(text)],
         )
 
         if not response or not response.data or len(response.data) == 0 or not response.data[0].embedding:
