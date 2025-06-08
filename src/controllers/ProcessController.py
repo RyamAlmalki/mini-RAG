@@ -1,3 +1,4 @@
+import logging
 from .BaseController import BaseController
 from .ProjectController import ProjectController
 import os
@@ -5,12 +6,6 @@ from langchain_community.document_loaders import TextLoader
 from langchain_community.document_loaders import PyMuPDFLoader
 from models import ProcessingEnum
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,  # This ensures .info() logs will show
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +23,10 @@ class ProcessController(BaseController):
         
         file_path = os.path.join(self.project_path, file_id)
 
-        file_extension = self.get_file_extension(file_path)
+        if not os.path.exists(file_path):
+            return None
         
-        logger.info(f"{file_extension}")
+        file_extension = self.get_file_extension(file_path)
         
         if file_extension == ProcessingEnum.TXT.value:
             return TextLoader(file_path, encoding='utf-8')
@@ -45,10 +41,13 @@ class ProcessController(BaseController):
         if loader:
             documents = loader.load()
             return documents
+        
+        return None
 
     def process_file_content(self, file_contents: list, file_id: str, chunk_size: int = 100, chunk_overlap: int = 20):
-       
-        if file_contents is None or len(file_contents) == 0:
+        
+        if file_contents is None:
+            logger.error(f"No content found for file: {file_id}")
             return None
        
         text_splitter = RecursiveCharacterTextSplitter(

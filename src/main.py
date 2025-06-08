@@ -5,6 +5,14 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from helper.config import get_settings
 from contextlib import asynccontextmanager
 
+import logging
+
+logging.getLogger("pymongo").setLevel(logging.WARNING)
+
+logging.basicConfig(
+    level=logging.DEBUG,  # Show all levels: DEBUG and above
+    format="%(levelname)s:%(name)s:%(message)s"
+)
 
 # The Problem: Where Do You Connect to the Database?
 # Connect to the database when the app starts
