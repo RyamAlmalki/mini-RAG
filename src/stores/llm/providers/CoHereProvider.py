@@ -1,4 +1,4 @@
-from ..LLMinterface import LLMInterface
+from ..LLMInterface import LLMInterface
 import logging 
 from ..LLMEnum import CoHereEnum, DocumentTypeEnum
 from cohere import Client 
@@ -34,7 +34,9 @@ class CoHereProvider(LLMInterface):
         self.embedding_model_id = model_id
         self.embedding_size = embedding_size
 
-    def process_text(self, text: str):
+    def process_text(self, text):
+        if isinstance(text, list):
+            text = " ".join(text)
         return text[:self.default_input_max_characters].strip()
     
     def generate_text(self, prompt: str, chat_history: list=[],
@@ -85,7 +87,9 @@ class CoHereProvider(LLMInterface):
             embedding_types=['float']
         )
 
-        if response is None or not response.embeddings or len(response.embeddings) == 0 or not response.embeddings.float:
+        logging.info(f"Embedding response: {response}")
+        
+        if response is None or not response.embeddings:
             self.logger.error("Failed to embed text.")
             return None
         

@@ -1,7 +1,7 @@
 from .providers import QdrantDBProvider
-from ...helper.config import Settings
+from helper.config import Settings
 from .VectorDBEnum import VectorDBEnum
-from ...controllers.BaseController import BaseController
+from controllers.BaseController import BaseController
 
 
 class VectorDBProviderFactory:
@@ -10,9 +10,9 @@ class VectorDBProviderFactory:
         self.config = config
         self.base_controller = BaseController()
 
-    def create(self, provider: str):
+    async def create(self, provider: str):
         if provider == VectorDBEnum.QDRANT.value:
-            db_path = self.base_controller.get_database_path(self.config.VECTOR_DB_PATH)
+            db_path = self.base_controller.get_database_path(database_name=self.config.VECTOR_DB_PATH)
             
             return QdrantDBProvider(
                 db_path=db_path,
@@ -20,3 +20,5 @@ class VectorDBProviderFactory:
             )
         
         return None
+    
+

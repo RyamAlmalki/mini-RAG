@@ -1,9 +1,9 @@
-from ..LLMinterface import LLMInterface
+from ..LLMInterface import LLMInterface
 from openai import OpenAI
 import logging 
 from ..LLMEnum import OpenAIEnum
 
-class OpenAiProvider(LLMInterface):
+class OpenAIProvider(LLMInterface):
     def __init__(self, api_key: str, api_url: str=None, 
                  default_input_max_characters: int=1000, 
                  default_generation_max_output_token: int=1000,
@@ -35,7 +35,9 @@ class OpenAiProvider(LLMInterface):
         self.embedding_model_id = model_id
         self.embedding_size = embedding_size
     
-    def process_text(self, text: str):
+    def process_text(self, text):
+        if isinstance(text, list):
+            text = " ".join(text)
         return text[:self.default_input_max_characters].strip()
     
     def generate_text(self, prompt: str, chat_history: list=[], max_output_tokens: int=None, 
