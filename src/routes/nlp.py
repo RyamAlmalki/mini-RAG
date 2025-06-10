@@ -90,3 +90,44 @@ async def index_project(request: Request, project_id: str, push_request: PushReq
             "inserted_items_count": inserted_items_count
         }
     )
+
+
+@router.get("/index/info/{project_id}")
+async def get_project_index_info(request: Request, project_id: str):
+    
+    # This will handle the talking with mongo db project collection
+    project_model = await ProjectModel.create_instance(
+        db_client=request.app.db_client
+    )
+
+
+    # this will get the Project model
+    project = await project_model.get_project_or_create_one(
+        project_id=project_id
+    )
+
+    # This will handle the NLP operations like indexing into vector db
+    nlp_controller = NLPController(
+        vector_db_client=request.app.vector_db_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+    )
+
+    collection_info = await nlp_controller.get_vector_db_collection_info(
+        project=project
+    )
+
+    if not collection_info:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "signal": ResponseSignal.COLLECTION_NOT_FOUND_ERROR.value
+            }
+        )
+    
+    return JSONResponse(
+        content={
+            "signal": ResponseSignal.VECTOR_DB_COLLECTION_RETRIEVED.value,
+            "collection_info": collection_info
+        }
+    )
