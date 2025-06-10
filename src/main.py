@@ -9,12 +9,6 @@ from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
 import logging
 
-logging.getLogger("pymongo").setLevel(logging.WARNING)
-
-# logging.basicConfig(
-#     level=logging.DEBUG,  # Show all levels: DEBUG and above
-#     format="%(levelname)s:%(name)s:%(message)s"
-# )
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
