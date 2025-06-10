@@ -14,3 +14,5 @@ class ResponseSignal(Enum):
     VECTOR_DB_INDEXING_FAILED = "Vector DB indexing failed"
     INSERTION_INTO_VECTOR_DB_SUCCESS = "Insertion into vector DB sucess"
     VECTOR_DB_COLLECTION_RETRIEVED = "Vector DB collection retrieved successfully"
+    VECTORDB_SEARCH_SUCCESS = "Vector DB search successful"
+    VECTORDB_SEARCH_FAILED = "Vector DB search failed"
