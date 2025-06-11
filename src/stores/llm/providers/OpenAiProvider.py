@@ -12,19 +12,19 @@ class OpenAIProvider(LLMInterface):
         
         self.api_key = api_key
         self.api_url = api_url
-        
+
         self.default_input_max_characters = default_input_max_characters
         self.default_generation_max_output_token = default_generation_max_output_token
         self.defult_generation_temperature = defult_generation_temperature
         
         self.generation_model_id = None 
-        
+        self.enums = OpenAIEnum
         self.embedding_model_id = None
         self.embedding_size = None
 
         self.client = OpenAI(
             api_key=self.api_key, 
-            api_url=self.api_url)
+            base_url=self.api_url)
         
         self.logger = logging.getLogger(__name__)
 

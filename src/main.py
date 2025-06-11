@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
 import logging
+from stores.llm.templates.template_parser import TemplateParser
 
 
 @asynccontextmanager
@@ -32,6 +33,11 @@ async def lifespan(app: FastAPI):
     
     # Now this is safe, the instance is returned and connected (or connect called explicitly)
     await app.vector_db_client.connect()
+    
+    app.template_parser = TemplateParser(
+        language=settings.PRIMARY_LANGUAGE,
+        default_language=settings.DEFAULT_LAGUAGE
+    )
     
     yield
 

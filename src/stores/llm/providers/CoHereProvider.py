@@ -20,7 +20,7 @@ class CoHereProvider(LLMInterface):
         
         self.embedding_model_id = None
         self.embedding_size = None
-
+        self.enums = CoHereEnum
 
         self.client = Client(api_key=self.api_key)
         
@@ -40,7 +40,7 @@ class CoHereProvider(LLMInterface):
         return text[:self.default_input_max_characters].strip()
     
     def generate_text(self, prompt: str, chat_history: list=[],
-        max_output_tokens: int=None,):
+        max_output_tokens: int=None, temperature: float = None):
         
         if not self.client:
             self.logger.error("Cohere client is not initialized.")
@@ -99,5 +99,5 @@ class CoHereProvider(LLMInterface):
     def construct_prompt(self, prompt: str, role: str):
         return {
             "role": role,
-            "text": [self.process_text(prompt)]
+            "message": self.process_text(prompt)
         }
