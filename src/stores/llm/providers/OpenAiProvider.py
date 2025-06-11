@@ -24,7 +24,8 @@ class OpenAIProvider(LLMInterface):
 
         self.client = OpenAI(
             api_key=self.api_key, 
-            base_url=self.api_url)
+            base_url=self.api_url if self.api_url and len(self.api_url) > 0 else None
+        )
         
         self.logger = logging.getLogger(__name__)
 
