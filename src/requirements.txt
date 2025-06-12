@@ -12,6 +12,6 @@ openai==1.84.0
 cohere==5.15.0
 qdrant-client==1.14.2
 SQLAlchemy==2.0.41
-asyncpg==0.29.0  # to use PostgreSQL with async
+asyncpg==0.29.0  
 alembic==1.13.1
 psycopg2-binary==2.9.9
