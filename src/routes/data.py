@@ -7,7 +7,7 @@ import aiofiles
 from models import ResponseSignal
 from .schemas.data import ProcessRequest
 from models.ProjectModel import ProjectModel
-from models.db_schemes.chunk import DataChunk
+from models.db_schemes import DataChunk
 from models.ChunkModel import ChunkModel
 from models.AssetModel import AssetModel
 from models.db_schemes import Asset

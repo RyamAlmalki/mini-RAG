@@ -1,5 +1,5 @@
 from .BaseDataModel import BaseDataModel
-from .db_schemes.project import Project
+from .db_schemes import Project
 from .enums.DataBaseEnum import DataBaseEnum
 
 # note you cant have a async function in __init_ method, so we use a class method to create an instance
