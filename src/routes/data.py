@@ -17,7 +17,7 @@ from models.enums.AssetTypeEnum import AssetTypeEnum
 router = APIRouter()
 
 @router.post("/upload/{project_id}")
-async def upload_data(request: Request, project_id: str, file: UploadFile, app_settings: Settings = Depends(get_settings)):
+async def upload_data(request: Request, project_id: int, file: UploadFile, app_settings: Settings = Depends(get_settings)):
     
 
     project_model = await ProjectModel.create_instance(
@@ -54,7 +54,6 @@ async def upload_data(request: Request, project_id: str, file: UploadFile, app_s
                 await f.write(chunk)
 
     except Exception as e:
-        logger.error(f"Error uploading file: {e}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"message": ResponseSignal.FILE_UPLOAD_FAILED.value} 
@@ -65,7 +64,7 @@ async def upload_data(request: Request, project_id: str, file: UploadFile, app_s
         db_client=request.app.db_client,
     )
     asset = Asset(
-        asset_project_id=project_db.id,
+        asset_project_id=project_db.project_id,
         asset_type=AssetTypeEnum.FILE.value,
         asset_name=file_id,
         asset_size=os.path.getsize(file_path),
@@ -83,13 +82,13 @@ async def upload_data(request: Request, project_id: str, file: UploadFile, app_s
         status_code=status.HTTP_200_OK,
         content={
             "message": result_signal,
-            "file_id": str(asset_record.id),
+            "file_id": str(asset_record.asset_id),
         }
     )
 
 
 @router.post("/process/{project_id}")
-async def process_endpoint(request: Request, project_id: str, process_request: ProcessRequest):
+async def process_endpoint(request: Request, project_id: int, process_request: ProcessRequest):
     
     
     chunk_size = process_request.chunk_size
@@ -113,7 +112,7 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
     if process_request.file_id is not None:
         
         asset_record = await asset_model.get_asset_record(
-            asset_project_id=project_db.id,
+            asset_project_id=project_db.project_id,
             asset_name=process_request.file_id
         )
         
@@ -124,17 +123,17 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
             )
         else:
             project_files_ids = {
-                asset_record.id: asset_record.asset_name
+                asset_record.asset_project_id: asset_record.asset_name
             }
     else:
 
         project_files = await asset_model.get_all_project_assets(
-            asset_project_id=project_db.id,
+            asset_project_id=project_db.project_id,
             asset_type=AssetTypeEnum.FILE.value
         )
 
         project_files_ids = {
-            asset_record.id : asset_record.asset_name
+            asset_record.asset_id : asset_record.asset_name
             for asset_record in project_files
         }
     
@@ -156,7 +155,7 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
     )
 
     if do_reset == 1:
-        await chunk_model.delete_chunk_by_project_id(project_id=project_db.id)
+        await chunk_model.delete_chunk_by_project_id(project_id=project_db.project_id)
     
     for asset_id, file_id in project_files_ids.items():
         
@@ -180,7 +179,7 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
         
         file_chunks_records = [
             DataChunk(
-                chunk_project_id=project_db.id,
+                chunk_project_id=project_db.project_id,
                 chunk_asset_id=asset_id,
                 chunk_text=chunk.page_content,
                 chunk_metadata=chunk.metadata,

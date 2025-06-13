@@ -7,30 +7,16 @@ from bson import ObjectId
 class AssetModel(BaseDataModel):
     def __init__(self, db_client: object):
         super().__init__(db_client=db_client)
-        self.collection = self.db_client[DataBaseEnum.COLLECTION_ASSET_NAME.value]
+        self.db_client = db_client
 
     @classmethod
     async def create_instance(cls, db_client: object):
         instance = cls(db_client=db_client)  # this will call the __init__ method
-        await instance.init_collection()
         return instance
-
-    async def init_collection(self):
-        all_collections = await self.db_client.list_collection_names()
-        if DataBaseEnum.COLLECTION_ASSET_NAME.value not in all_collections:
-            self.collection = await self.db_client.create_collection(DataBaseEnum.COLLECTION_ASSET_NAME.value)
-            indexes = Asset.get_indexes()
-            
-            for index in indexes:
-                await self.collection.create_index(
-                    index["key"], 
-                    unique=index["unique"], 
-                    name=index["name"]
-                )
     
     async def create_asset(self, asset: Asset):
         result = await self.collection.insert_one(asset.model_dump(by_alias=True, exclude_unset=True))
-        Asset.id = result.inserted_id
+        Asset.asset_id = result.inserted_id
         return Asset
 
     
