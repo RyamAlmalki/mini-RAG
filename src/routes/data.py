@@ -7,10 +7,10 @@ import aiofiles
 from models import ResponseSignal
 from .schemas.data import ProcessRequest
 from models.ProjectModel import ProjectModel
-from models.db_schemes import DataChunk
+from models.db_schemes import DataChunks
 from models.ChunkModel import ChunkModel
 from models.AssetModel import AssetModel
-from models.db_schemes import Asset
+from models.db_schemes import Assets
 from models.enums.AssetTypeEnum import AssetTypeEnum
 
 
@@ -63,7 +63,7 @@ async def upload_data(request: Request, project_id: int, file: UploadFile, app_s
     asset_model = await AssetModel.create_instance(
         db_client=request.app.db_client,
     )
-    asset = Asset(
+    asset = Assets(
         asset_project_id=project_db.project_id,
         asset_type=AssetTypeEnum.FILE.value,
         asset_name=file_id,
@@ -178,7 +178,7 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
             )
         
         file_chunks_records = [
-            DataChunk(
+            DataChunks(
                 chunk_project_id=project_db.project_id,
                 chunk_asset_id=asset_id,
                 chunk_text=chunk.page_content,

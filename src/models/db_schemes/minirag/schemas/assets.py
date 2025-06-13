@@ -17,7 +17,12 @@ class Assets(SQLAlchemyBase):
     asset_size = Column(Integer, nullable=False)  # Size in bytes
     asset_config = Column(JSONB, nullable=True) 
 
+    # go to Project you will find property assets
     project = relationship("Project", back_populates="assets")
+
+    # go to DataChunks you will find property assets
+    chunks = relationship("DataChunks", back_populates="assets")
+
 
     __table__args__ = (
         Index('idx_asset_project_id', 'asset_project_id'),

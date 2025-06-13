@@ -1,9 +1,11 @@
+import asyncio
 import json
 from .BaseController import BaseController
 from models.ProjectModel import ProjectModel
-from models.ChunkModel import DataChunk
+from models.ChunkModel import DataChunks
 from typing import List
 from stores.llm.LLMEnum import DocumentTypeEnum
+import time
 
 class NLPController(BaseController):
     def __init__(self, vector_db_client, generation_client, embedding_client, template_parser):
@@ -32,31 +34,84 @@ class NLPController(BaseController):
             json.dumps(collection_info, default=lambda x: x.__dict__)
         )
 
-    async def index_into_vector_db(self, project: ProjectModel, chunks: List[DataChunk],
-                                   chunks_ids: List[int], 
-                                   do_reset: bool = False):
+    # async def index_into_vector_db(self, project: ProjectModel, chunks: List[DataChunks],
+    #                                chunks_ids: List[int], 
+    #                                do_reset: bool = False):
         
-        # step1: get collection name
+    #     # step1: get collection name
+    #     collection_name = self.create_collection_name(project_id=project.project_id)
+
+    #     # step2: manage items
+    #     texts = [ c.chunk_text for c in chunks ]
+    #     metadata = [ c.chunk_metadata for c in  chunks]
+    #     # vectors = [
+    #     #     self.embedding_client.embed_text(text=text, 
+    #     #                                      document_type=DocumentTypeEnum.DOCUMENT.value)
+    #     #     for text in texts
+    #     # ]
+
+
+    #     vectors = []
+    #     for text in texts:
+    #         vector = self.embedding_client.embed_text(
+    #             text=text,
+    #             document_type=DocumentTypeEnum.DOCUMENT.value
+    #         )
+    #         vectors.append(vector)
+    #         time.sleep(0.7)  # ~85 calls per minute — stays under 100
+
+
+    #     # step3: create collection if not exists
+    #     _ = await self.vector_db_client.create_collection(
+    #         collection_name=collection_name,
+    #         embedding_size=self.embedding_client.embedding_size,
+    #         do_reset=do_reset,
+    #     )
+
+    #     # step4: insert into vector db
+    #     _ = await self.vector_db_client.insert_many(
+    #         collection_name=collection_name,
+    #         texts=texts,
+    #         metadata=metadata,
+    #         vectors=vectors,
+    #         record_ids=chunks_ids,
+    #     )
+
+    #     return True
+
+    async def index_into_vector_db(self, project: ProjectModel, chunks: List[DataChunks],
+                                chunks_ids: List[int], 
+                                do_reset: bool = False, batch_size: int = 50):
+        
         collection_name = self.create_collection_name(project_id=project.project_id)
+        texts = [c.chunk_text for c in chunks]
+        metadata = [c.chunk_metadata for c in chunks]
 
-        # step2: manage items
-        texts = [ c.chunk_text for c in chunks ]
-        metadata = [ c.chunk_metadata for c in  chunks]
-        vectors = [
-            self.embedding_client.embed_text(text=text, 
-                                             document_type=DocumentTypeEnum.DOCUMENT.value)
-            for text in texts
-        ]
+        vectors = []
 
-        # step3: create collection if not exists
-        _ = await self.vector_db_client.create_collection(
+        # Process texts in batches asynchronously
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i:i+batch_size]
+
+            # Assume your client has an async batch embed method
+            batch_vectors = await self.embedding_client.embed_texts(
+                texts=batch_texts,
+                document_type=DocumentTypeEnum.DOCUMENT.value
+            )
+            vectors.extend(batch_vectors)
+
+            # Optional: small delay
+            await asyncio.sleep(0.5)  
+
+        # Create collection async call
+        await self.vector_db_client.create_collection(
             collection_name=collection_name,
             embedding_size=self.embedding_client.embedding_size,
             do_reset=do_reset,
         )
 
-        # step4: insert into vector db
-        _ = await self.vector_db_client.insert_many(
+        # Insert batch into vector DB async call
+        await self.vector_db_client.insert_many(
             collection_name=collection_name,
             texts=texts,
             metadata=metadata,
@@ -66,7 +121,6 @@ class NLPController(BaseController):
 
         return True
 
-    
 
     async def search_vector_db_collection(self, project: ProjectModel, text: str, limit: int = 5):
         
@@ -117,7 +171,7 @@ class NLPController(BaseController):
         documents_prompts = "\n".join([
             self.template_parser.get("rag", "document_prompt", {
                     "document_number": idx + 1,
-                    "chunk_text": doc.text,
+                    "chunk_text": self.generation_client.process_text(doc.text),
             })
             for idx, doc in enumerate(retrieved_documents)
         ])

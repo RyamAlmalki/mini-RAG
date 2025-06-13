@@ -102,3 +102,6 @@ class OpenAIProvider(LLMInterface):
         
         return response.data[0].embedding
     
+
+    def embed_texts(self, text: str, document_type: str = None):
+        pass

@@ -2,6 +2,8 @@ from ..LLMInterface import LLMInterface
 import logging 
 from ..LLMEnum import CoHereEnum, DocumentTypeEnum
 from cohere import Client 
+from typing import List
+
 
 class CoHereProvider(LLMInterface):
     def __init__(self, api_key: str,
@@ -56,7 +58,7 @@ class CoHereProvider(LLMInterface):
         response = self.client.chat(
             model=self.generation_model_id,
             chat_history=chat_history,
-            message=self.process_text(prompt),
+            message=prompt,
             temperature=temperature,
             max_tokens=max_output_tokens
         )
@@ -67,6 +69,7 @@ class CoHereProvider(LLMInterface):
 
         return response.text
     
+
     def embed_text(self, text: str, document_type: str = None):
         if not self.client:
             self.logger.error("Cohere client is not initialized.")
@@ -96,8 +99,39 @@ class CoHereProvider(LLMInterface):
         return response.embeddings.float[0]
 
 
+    async def embed_texts(self, texts: List[str], document_type: str = None):
+        if not self.client:
+            self.logger.error("Cohere client is not initialized.")
+            return None
+
+        if not self.embedding_model_id:
+            self.logger.error("Embedding model ID is not set.")
+            return None
+
+        input_type = CoHereEnum.DOCUMENT.value
+        if document_type == DocumentTypeEnum.QUERY.value:
+            input_type = CoHereEnum.QUERY.value
+
+        processed_texts = [self.process_text(text) for text in texts]
+
+        response = self.client.embed(
+            model=self.embedding_model_id,
+            texts=processed_texts,
+            input_type=input_type,
+            embedding_types=['float']
+        )
+
+        logging.info(f"Embedding response: {response}")
+
+        if response is None or not response.embeddings:
+            self.logger.error("Failed to embed texts.")
+            return None
+
+        return response.embeddings.float  #
+
+
     def construct_prompt(self, prompt: str, role: str):
         return {
             "role": role,
-            "message": self.process_text(prompt)
+            "message": prompt
         }

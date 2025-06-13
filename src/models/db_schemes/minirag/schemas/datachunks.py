@@ -25,8 +25,11 @@ class DataChunks(SQLAlchemyBase):
     # onupdate only when the row is updated you set this field to the current time
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
+    # go to Project you will find property chunks
     project = relationship("Project", back_populates="chunks")
-    asset = relationship("Asset", back_populates="chunks")
+
+    # go to Assets you will find property chunks
+    assets = relationship("Assets", back_populates="chunks")
 
 
     __table__args__ = (

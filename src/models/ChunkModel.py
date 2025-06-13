@@ -1,8 +1,8 @@
 from .BaseDataModel import BaseDataModel
 from .enums.DataBaseEnum import DataBaseEnum
-from .db_schemes import DataChunk
+from .db_schemes import DataChunks
 from bson.objectid import ObjectId
-from sqlalchemy.future import select, delete
+from sqlalchemy import select, delete
 # Motor is an async wrapper
 # InsertOne is a class for defining insert operations in bulk writes
 
@@ -18,7 +18,7 @@ class ChunkModel(BaseDataModel):
         return instance
 
 
-    async def create_chunk(self, chunk: DataChunk):
+    async def create_chunk(self, chunk: DataChunks):
         async with self.db_client() as session:
             async with session.begin():
                 session.add(chunk)
@@ -30,7 +30,7 @@ class ChunkModel(BaseDataModel):
 
     async def get_chunk_by_id(self, chunk_id: str):
         async with self.db_client() as session:
-                result = await session.execute(select(DataChunk).where(DataChunk.chunk_id == chunk_id))
+                result = await session.execute(select(DataChunks).where(DataChunks.chunk_id == chunk_id))
                 chunk = result.scalar_one_or_none()
         return chunk
 
@@ -48,7 +48,7 @@ class ChunkModel(BaseDataModel):
 
     async def delete_chunk_by_project_id(self, project_id: ObjectId):
         async with self.db_client() as session:
-            stmt = delete(DataChunk).where(DataChunk.chunk_project_id == project_id)
+            stmt = delete(DataChunks).where(DataChunks.chunk_project_id == project_id)
             result = await session.execute(stmt)
             await session.commit()
         return result.rowcount
@@ -56,7 +56,7 @@ class ChunkModel(BaseDataModel):
 
     async def get_project_chunks(self, project_id: ObjectId, page_number: int = 1, page_size: int = 50):
         async with self.db_client() as session:
-            stmt = select(DataChunk).where(DataChunk.chunk_project_id == project_id).offset((page_number - 1) * page_size).limit(page_size)
+            stmt = select(DataChunks).where(DataChunks.chunk_project_id == project_id).offset((page_number - 1) * page_size).limit(page_size)
             result = await session.execute(stmt)
             chunks = result.scalars().all()
         return chunks
