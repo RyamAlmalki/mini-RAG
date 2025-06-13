@@ -1,8 +1,7 @@
 from .db_schemes import Asset
 from .BaseDataModel import BaseDataModel
 from .enums.DataBaseEnum import DataBaseEnum
-from bson import ObjectId
-
+from sqlalchemy.future import select, delete
 
 class AssetModel(BaseDataModel):
     def __init__(self, db_client: object):
@@ -15,25 +14,35 @@ class AssetModel(BaseDataModel):
         return instance
     
     async def create_asset(self, asset: Asset):
-        result = await self.collection.insert_one(asset.model_dump(by_alias=True, exclude_unset=True))
-        Asset.asset_id = result.inserted_id
-        return Asset
+        async with self.db_client() as session:
+            async with session.begin():
+                session.add(asset)
+            await session.commit()
+            await session.refresh(asset)
+        
+        return asset
 
     
     async def get_all_project_assets(self, asset_project_id: str, asset_type: str):
-        records = await self.collection.find(
-            {
-                "asset_project_id": ObjectId(asset_project_id) if isinstance(asset_project_id, str) else asset_project_id,
-                "asset_type": asset_type,
-            }
-        ).to_list(length=None)
-    
-        return [Asset(**record) for record in records] if records else []
+        async with self.db_client() as session:
+            stmt = select(Asset).where(
+                Asset.asset_project_id == asset_project_id,
+                Asset.asset_type == asset_type
+            )
+        
+            result = await self.db_client.execute(stmt)
+            assets = result.scalars().all()
+        return assets
     
     async def get_asset_record(self, asset_project_id: str, asset_name: str):
-        record = await self.collection.find_one({
-            "asset_project_id": ObjectId(asset_project_id) if isinstance(asset_project_id, str) else asset_project_id,
-            "asset_name": asset_name
-        })
+       
+        async with self.db_client() as session:
+            stmt = select(Asset).where(
+                Asset.asset_project_id == asset_project_id,
+                Asset.asset_name == asset_name
+            )
+        
+            result = await session.execute(stmt)
+            record = result.scalar_one_or_none()
 
-        return Asset(**record) if record else None
+        return record
