@@ -1,12 +1,9 @@
 from fastapi import FastAPI
 from routes import base, data, nlp
-# motor is like a wrapper for pymongo, but for async
 from helper.config import get_settings
 from contextlib import asynccontextmanager
-
 from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
-import logging
 from stores.llm.templates.template_parser import TemplateParser
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
