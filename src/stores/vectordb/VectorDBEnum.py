@@ -22,3 +22,7 @@ class PgVectorDistanceMethodEnum(Enum):
     COSINE = "vector_cosine_ops"
     DOT = "vector_12_ops"
     
+    
+class PgVectorIndexTypeEnum(Enum):
+    IVFFLAT = "ivfflat"
+    HNSW = "hnsw"

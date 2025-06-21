@@ -19,7 +19,7 @@ class QdrantDBProvider(VectorDBInterface):
         elif distance_method == DistanceMethodEnum.DOT.value:
             self.distance_method = models.Distance.DOT
         
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("Uvicorn")
 
     async def connect(self):
         self.client = QdrantClient(path=self.db_client)
