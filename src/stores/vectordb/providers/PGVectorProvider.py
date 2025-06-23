@@ -120,18 +120,20 @@ class PGVectorProvider(VectorDBInterface):
             
             async with self.db_client as session:
                 async with session.begin():
-                    create_table_sql = sql_text(f'''
-                        CREATE TABLE IF NOT EXISTS {collection_name} (
-                            id SERIAL PRIMARY KEY,
-                            text TEXT,
-                            vector VECTOR({embedding_size}),
-                            chunk_id TEXT,
-                            metadata JSONB
-                        );
-                    ''')
+                    create_table_sql = sql_text(
+                        'CREATE TABLE :collection_name (' 
+                        f'{PgVectorTableSchemaEnum.ID.value} bigserial PRIMARY KEY'
+                        f'{PgVectorTableSchemaEnum.TEXT.value} text, '
+                        f'{PgVectorTableSchemaEnum.VECTOR.value} vector({embedding_size}), '
+                        f'{PgVectorTableSchemaEnum.CHUNK_ID.value} integer, '
+                        f'{PgVectorTableSchemaEnum.METADATA.value} jsonb DEFAULT \'{{}}\',  '
+                        f'FOREIGN KEY ({PgVectorTableSchemaEnum.CHUNK_ID.value}) REFERENCES chunks(chunk_id)'
+                        ')'
+                    )
                     await session.execute(create_table_sql)
                     await session.commit()
             
             return True
         
         return False
+                                                
