@@ -121,7 +121,7 @@ class PGVectorProvider(VectorDBInterface):
             async with self.db_client as session:
                 async with session.begin():
                     create_table_sql = sql_text(
-                        'CREATE TABLE :collection_name (' 
+                        f'CREATE TABLE :{collection_name} (' 
                         f'{PgVectorTableSchemaEnum.ID.value} bigserial PRIMARY KEY'
                         f'{PgVectorTableSchemaEnum.TEXT.value} text, '
                         f'{PgVectorTableSchemaEnum.VECTOR.value} vector({embedding_size}), '
@@ -137,3 +137,119 @@ class PGVectorProvider(VectorDBInterface):
         
         return False
                                                 
+
+    async def insert_one(self, collection_name: str, text: str, vector: list, metadata: dict = None, record_id: str = None):
+        
+        is_collection_exists = await self.is_collection_exists(collection_name)
+
+        if not is_collection_exists:
+            self.logger.error(f"Collection {collection_name} does not exist.")
+            return False
+
+        if not record_id:
+            self.logger.info(f"Cannot insert record without record_id. ")
+            return False
+
+
+        async with self.db_client as session:
+            async with session.begin():
+                insert_sql = sql_text(
+                    f'INSERT INTO {collection_name} '
+                    f'({PgVectorTableSchemaEnum.CHUNK_ID.value}, '
+                    f'{PgVectorTableSchemaEnum.TEXT.value}, '
+                    f'{PgVectorTableSchemaEnum.VECTOR.value}, '
+                    f'{PgVectorTableSchemaEnum.METADATA.value}) '
+                    f'VALUES (:chunk_id, :text, :vector, :metadata)'
+                )
+                
+                await session.execute(insert_sql, {
+                    'chunk_id': record_id,
+                    'text': text,
+                    'vector': "[" + ",".join([str(v) for v in vector]) + "]",
+                    'metadata': metadata
+                })
+
+                await session.commit()
+
+        return True
+    
+    async def insert_many(self, collection_name: str, texts: list, vectors: list,
+                          metadata: list = None, record_ids: list = None, batch_size: int = 50):
+        
+        is_collection_exists = await self.is_collection_exists(collection_name)
+
+        if not is_collection_exists:
+            self.logger.error(f"Collection {collection_name} does not exist.")
+            return False
+
+        if len(vectors) != len(record_ids):
+            self.logger.error("Vectors and record IDs must have the same length.")
+            return False
+
+        async with self.db_client as session:
+            async with session.begin():
+                for i in range(0, len(texts), batch_size):
+                    batch_texts = texts[i:i + batch_size]
+                    batch_vectors = vectors[i:i + batch_size]
+                    batch_metadata = metadata[i:i + batch_size] 
+                    batch_record_ids = record_ids[i:i + batch_size]
+
+                    values = []
+
+                    for _text, _vector, _metadata, _record_id in zip(
+                        batch_texts, batch_vectors, batch_metadata, batch_record_ids
+                    ):
+                        values.append(
+                            {
+                                'chunk_id': _record_id,
+                                'text': _text,
+                                'vector': "[" + ",".join([str(v) for v in _vector]) + "]",
+                                'metadata': _metadata
+                            }
+                        )
+
+                    
+                    batch_insert_sql = sql_text(
+                        f'INSERT INTO {collection_name} '
+                        f'({PgVectorTableSchemaEnum.CHUNK_ID.value}, '
+                        f'{PgVectorTableSchemaEnum.TEXT.value}, '
+                        f'{PgVectorTableSchemaEnum.VECTOR.value}, '
+                        f'{PgVectorTableSchemaEnum.METADATA.value}) '
+                        f'VALUES (:chunk_id, :text, :vector, :metadata)'
+                    )
+
+                    await session.execute(batch_insert_sql, values)
+
+        return True
+    
+        
+    async def search_by_vector(self, collection_name: str, vector: list, 
+                        limit: int = 10) -> List[RetrievedDocuments]:
+
+        is_collection_exists = await self.is_collection_exists(collection_name)
+        
+        if not is_collection_exists:
+            self.logger.error(f"Collection {collection_name} does not exist.")
+            return []
+
+        vector = "[" + ",".join([str(v) for v in vector]) + "]"
+
+        async with self.db_client as session:
+            async with session.begin():
+                search_sql = sql_text(f'SELECT {PgVectorTableSchemaEnum.TEXT.value} as text, 1 - ({PgVectorTableSchemaEnum.VECTOR.value} <=> :vector) as score'
+                        f' FROM {collection_name}'
+                        ' ORDER BY score DESC '
+                        f'LIMIT {limit}'
+                        )
+
+                result = await session.execute(search_sql, {"vector": vector})
+
+                records = result.fetchall()
+
+                return [
+                    RetrievedDocuments(
+                        text=record.text,
+                        score=record.score
+                    )
+                    for record in records
+                ]
