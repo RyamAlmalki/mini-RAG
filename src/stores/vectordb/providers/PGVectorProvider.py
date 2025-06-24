@@ -6,22 +6,25 @@ import logging
 from typing import List
 from models.db_schemes import RetrievedDocuments
 from sqlalchemy.sql import text as sql_text
-import json 
+
 
 
 class PGVectorProvider(VectorDBInterface):
     def __init__(self, db_client, 
                  distance_method: str = None, 
-                 default_vector_size: int = 786):
+                 default_vector_size: int = 786, index_threshold: int = 100):
         
         self.db_client = db_client
         self.distance_method = distance_method
         self.default_vector_size = default_vector_size
+        self.index_threshold = index_threshold
 
         self.pgvector_table_prefix = PgVectorTableSchemaEnum._PREFIX.value
 
         self.logger = logging.getLogger("Uvicorn")
 
+        self.default_index_name = lambda collection_name: f"{self.pgvector_table_prefix}_{collection_name}_index"
+        
         if distance_method == PgVectorDistanceMethodEnum.COSINE.value:
             self.distance_method = PgVectorDistanceMethodEnum.COSINE.value
         elif distance_method == PgVectorDistanceMethodEnum.DOT.value:
@@ -108,35 +111,69 @@ class PGVectorProvider(VectorDBInterface):
         return True
     
     async def create_collection(self, collection_name: str,
-                                embedding_size: int,
-                                do_reset: bool = False):
+                                      embedding_size: int,
+                                      do_reset: bool = False):
         
         if do_reset:
             _ = await self.delete_collection(collection_name=collection_name)
-        
-        is_collection_exists = await self.is_collection_exists(collection_name)
-        if not is_collection_exists:
-            self.logger.info(f"Creating new PGVector collection: {collection_name}")
-            
-            async with self.db_client as session:
+
+        is_collection_existed = await self.is_collection_existed(collection_name=collection_name)
+        if not is_collection_existed:
+            self.logger.info(f"Creating collection: {collection_name}")
+            async with self.db_client() as session:
                 async with session.begin():
-                    create_table_sql = sql_text(
-                        f'CREATE TABLE :{collection_name} (' 
-                        f'{PgVectorTableSchemaEnum.ID.value} bigserial PRIMARY KEY'
-                        f'{PgVectorTableSchemaEnum.TEXT.value} text, '
-                        f'{PgVectorTableSchemaEnum.VECTOR.value} vector({embedding_size}), '
-                        f'{PgVectorTableSchemaEnum.CHUNK_ID.value} integer, '
-                        f'{PgVectorTableSchemaEnum.METADATA.value} jsonb DEFAULT \'{{}}\',  '
-                        f'FOREIGN KEY ({PgVectorTableSchemaEnum.CHUNK_ID.value}) REFERENCES chunks(chunk_id)'
+                    create_sql = sql_text(
+                        f'CREATE TABLE {collection_name} ('
+                            f'{PgVectorTableSchemaEnum.ID.value} bigserial PRIMARY KEY,'
+                            f'{PgVectorTableSchemaEnum.TEXT.value} text, '
+                            f'{PgVectorTableSchemaEnum.VECTOR.value} vector({embedding_size}), '
+                            f'{PgVectorTableSchemaEnum.METADATA.value} jsonb DEFAULT \'{{}}\', '
+                            f'{PgVectorTableSchemaEnum.CHUNK_ID.value} integer, '
+                            f'FOREIGN KEY ({PgVectorTableSchemaEnum.CHUNK_ID.value}) REFERENCES chunks(chunk_id)'
                         ')'
                     )
-                    await session.execute(create_table_sql)
+                    await session.execute(create_sql)
                     await session.commit()
             
             return True
-        
+
         return False
-                                                
+
+
+
+    async def is_index_existed(self, collection_name: str) -> bool:
+        index_name = self.default_index_name(collection_name)
+        async with self.db_client as session:
+            async with session.begin():
+                
+                index_sql = sql_text(
+                    'SELECT 1 FROM pg_indexes WHERE tablename = :collection_name AND indexname = :index_name'
+                )
+                
+                result = await session.execute(index_sql, {
+                    'collection_name': collection_name,
+                    'index_name': index_name
+                })
+                
+                return bool(result.scalar_one_or_none())
+
+
+    async def create_vector_index(self, collection_name: str,
+                                  index_type: str = PgVectorIndexTypeEnum.HNSW.value,):
+        
+        is_index_existed = await self.is_index_existed(collection_name=collection_name)
+
+        if is_index_existed:
+            return False
+        
+        async with self.db_client as session:
+            async with session.begin():
+                count_sql = sql_text(
+                    f'SELECT COUNT(*) FROM {collection_name}'
+                )
+                result = await session.execute(count_sql)
+                record_count = result.scalar_one()
+
 
     async def insert_one(self, collection_name: str, text: str, vector: list, metadata: dict = None, record_id: str = None):
         
