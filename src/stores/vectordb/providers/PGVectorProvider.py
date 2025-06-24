@@ -174,6 +174,24 @@ class PGVectorProvider(VectorDBInterface):
                 result = await session.execute(count_sql)
                 record_count = result.scalar_one()
 
+                if record_count < self.index_threshold:
+                    self.logger.info(f"Collection {collection_name} has only {record_count} records, skipping index creation.")
+                    return False
+
+                self.logger.info(f"Creating index for collection: {collection_name} with type: {index_type}")
+                
+                index_name = self.default_index_name(collection_name)
+                create_index_sql = sql_text(
+                    f'CREATE INDEX {index_name} '
+                    f'ON {collection_name} USING {index_type} '
+                    f'({PgVectorTableSchemaEnum.VECTOR.value} {self.distance_method})'
+                )
+                
+                await session.execute(create_index_sql)
+                await session.commit()
+
+
+    
 
     async def insert_one(self, collection_name: str, text: str, vector: list, metadata: dict = None, record_id: str = None):
         
