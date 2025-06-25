@@ -43,6 +43,7 @@ class PGVectorProvider(VectorDBInterface):
     async def disconnect(self):
         pass
 
+
     async def is_collection_exists(self, collection_name: str) -> bool:
         
         record = None
