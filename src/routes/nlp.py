@@ -7,6 +7,8 @@ from models.ProjectModel import ProjectModel
 from models.ChunkModel import ChunkModel
 from controllers import NLPController
 from models import ResponseSignal
+from tqdm.auto import tqdm
+
 
 logger = logging.getLogger('uvicorn.error')
 
@@ -16,12 +18,10 @@ router = APIRouter()
 @router.post("/index/push/{project_id}")
 async def index_project(request: Request, project_id: int, push_request: PushRequest):
 
-    # This will handle the talking with mongo db project collection
     project_model = await ProjectModel.create_instance(
         db_client=request.app.db_client
     )
 
-    # This will handle the talking with mongo db chunk collection
     chunk_model = await ChunkModel.create_instance(
         db_client=request.app.db_client
     )
@@ -51,6 +51,28 @@ async def index_project(request: Request, project_id: int, push_request: PushReq
     page_no = 1
     inserted_items_count = 0
     idx = 0
+
+    # create collection if not exists 
+    collection_name = nlp_controller.create_collection_name(
+        project_id=project.project_id
+    )
+
+    _ = await request.app.vector_db_client.create_collection(
+        collection_name=collection_name,
+        embedding_size=request.app.embedding_client.embedding_size,
+        do_reset=push_request.do_reset
+    )
+
+    # setup batching 
+    total_chunks_count = await ChunkModel.get_total_chunks_count(
+        project_id=project.project_id
+    )
+
+    pbar = tqdm(
+        total=total_chunks_count,
+        desc="Indexing chunks into vector db",
+        position=0,
+    )
 
     while has_records:
         page_chunks = await chunk_model.get_project_chunks(project_id=project.project_id, page_number=page_no)
@@ -83,6 +105,7 @@ async def index_project(request: Request, project_id: int, push_request: PushReq
                 }
             )
         
+        pbar.update(len(page_chunks))
         inserted_items_count += len(page_chunks)
         
     return JSONResponse(

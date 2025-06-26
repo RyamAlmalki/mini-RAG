@@ -3,8 +3,7 @@ from .enums.DataBaseEnum import DataBaseEnum
 from .db_schemes import DataChunks
 from bson.objectid import ObjectId
 from sqlalchemy import select, delete
-# Motor is an async wrapper
-# InsertOne is a class for defining insert operations in bulk writes
+from sqlalchemy.sql import func
 
 
 class ChunkModel(BaseDataModel):
@@ -60,3 +59,10 @@ class ChunkModel(BaseDataModel):
             result = await session.execute(stmt)
             chunks = result.scalars().all()
         return chunks
+    
+    async def get_total_chunks_count(self, project_id: ObjectId):
+        async with self.db_client() as session:
+            stmt = select(func.count(DataChunks)).where(DataChunks.chunk_project_id == project_id)
+            result = await session.execute(stmt)
+            count = result.scalar()
+        return count
