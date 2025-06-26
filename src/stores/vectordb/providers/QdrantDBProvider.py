@@ -7,13 +7,17 @@ from models.db_schemes import RetrievedDocuments
 
 
 class QdrantDBProvider(VectorDBInterface):
-    def __init__(self, db_path: str, distance_method: str, default_vector_size: int = 786):
+    def __init__(self, db_client, 
+                distance_method: str = None, 
+                default_vector_size: int = 786, index_threshold: int = 100):
         
         self.db_client = None
-        self.db_path = db_path
+        self.db_client = db_client
         self.distance_method = None
         self.default_vector_size = default_vector_size
+        self.index_threshold = index_threshold
 
+        
         if distance_method == DistanceMethodEnum.COSINE.value:
             self.distance_method = models.Distance.COSINE
         elif distance_method == DistanceMethodEnum.DOT.value:
@@ -33,7 +37,7 @@ class QdrantDBProvider(VectorDBInterface):
     async def list_all_collections(self) -> List:
         return self.client.get_collections()
     
-    def get_collection_info(self, collection_name: str) -> dict:
+    async def get_collection_info(self, collection_name: str) -> dict:
         return self.client.get_collection(collection_name=collection_name)
     
     async def delete_collection(self, collection_name: str):

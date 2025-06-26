@@ -5,7 +5,7 @@ from models.ProjectModel import ProjectModel
 from models.ChunkModel import DataChunks
 from typing import List
 from stores.llm.LLMEnum import DocumentTypeEnum
-import time
+
 
 class NLPController(BaseController):
     def __init__(self, vector_db_client, generation_client, embedding_client, template_parser):
@@ -28,56 +28,12 @@ class NLPController(BaseController):
 
     async def get_vector_db_collection_info(self, project: ProjectModel):
         collection_name = self.create_collection_name(project_id=project.project_id)
-        collection_info = self.vector_db_client.get_collection_info(collection_name=collection_name)
+        collection_info = await self.vector_db_client.get_collection_info(collection_name=collection_name)
 
         return json.loads(
             json.dumps(collection_info, default=lambda x: x.__dict__)
         )
 
-    # async def index_into_vector_db(self, project: ProjectModel, chunks: List[DataChunks],
-    #                                chunks_ids: List[int], 
-    #                                do_reset: bool = False):
-        
-    #     # step1: get collection name
-    #     collection_name = self.create_collection_name(project_id=project.project_id)
-
-    #     # step2: manage items
-    #     texts = [ c.chunk_text for c in chunks ]
-    #     metadata = [ c.chunk_metadata for c in  chunks]
-    #     # vectors = [
-    #     #     self.embedding_client.embed_text(text=text, 
-    #     #                                      document_type=DocumentTypeEnum.DOCUMENT.value)
-    #     #     for text in texts
-    #     # ]
-
-
-    #     vectors = []
-    #     for text in texts:
-    #         vector = self.embedding_client.embed_text(
-    #             text=text,
-    #             document_type=DocumentTypeEnum.DOCUMENT.value
-    #         )
-    #         vectors.append(vector)
-    #         time.sleep(0.7)  # ~85 calls per minute — stays under 100
-
-
-    #     # step3: create collection if not exists
-    #     _ = await self.vector_db_client.create_collection(
-    #         collection_name=collection_name,
-    #         embedding_size=self.embedding_client.embedding_size,
-    #         do_reset=do_reset,
-    #     )
-
-    #     # step4: insert into vector db
-    #     _ = await self.vector_db_client.insert_many(
-    #         collection_name=collection_name,
-    #         texts=texts,
-    #         metadata=metadata,
-    #         vectors=vectors,
-    #         record_ids=chunks_ids,
-    #     )
-
-    #     return True
 
     async def index_into_vector_db(self, project: ProjectModel, chunks: List[DataChunks],
                                 chunks_ids: List[int], 
@@ -94,7 +50,7 @@ class NLPController(BaseController):
             batch_texts = texts[i:i+batch_size]
 
             # Assume your client has an async batch embed method
-            batch_vectors = await self.embedding_client.embed_texts(
+            batch_vectors = await self.embedding_client.embed_text(
                 texts=batch_texts,
                 document_type=DocumentTypeEnum.DOCUMENT.value
             )
@@ -104,14 +60,14 @@ class NLPController(BaseController):
             await asyncio.sleep(0.5)  
 
         # Create collection async call
-        await self.vector_db_client.create_collection(
+        _ = await self.vector_db_client.create_collection(
             collection_name=collection_name,
             embedding_size=self.embedding_client.embedding_size,
             do_reset=do_reset,
         )
 
         # Insert batch into vector DB async call
-        await self.vector_db_client.insert_many(
+        _ = await self.vector_db_client.insert_many(
             collection_name=collection_name,
             texts=texts,
             metadata=metadata,
@@ -125,21 +81,28 @@ class NLPController(BaseController):
     async def search_vector_db_collection(self, project: ProjectModel, text: str, limit: int = 5):
         
         # step1: get collection name
+        query_vector = None
         collection_name = self.create_collection_name(project_id=project.project_id)
         
         # step2: embed the text
-        vector = self.embedding_client.embed_text(
+        vectors = self.embedding_client.embed_text(
             text=text, 
             document_type=DocumentTypeEnum.QUERY.value
         )
         
-        if not vector or len(vector) == 0:
+        if not vectors or len(vectors) == 0:
             return False
 
+        if isinstance(vectors, list) and len(vectors) > 0:
+            query_vector = vectors[0]
+
+        if not query_vector:
+            return False
+        
         # step3: do semantic search
         results = await self.vector_db_client.search_by_vector(
             collection_name=collection_name,
-            vector=vector,
+            vector=query_vector,
             limit=limit
         )
 

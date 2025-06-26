@@ -2,7 +2,7 @@ from ..LLMInterface import LLMInterface
 import logging 
 from ..LLMEnum import CoHereEnum, DocumentTypeEnum
 from cohere import Client 
-from typing import List
+from typing import List, Union
 
 
 class CoHereProvider(LLMInterface):
@@ -70,11 +70,14 @@ class CoHereProvider(LLMInterface):
         return response.text
     
 
-    def embed_text(self, text: str, document_type: str = None):
+    def embed_text(self, text: Union[str, List[str]], document_type: str = None):
         if not self.client:
             self.logger.error("Cohere client is not initialized.")
             return None
         
+        if isinstance(text, str):
+            texts = [text]
+            
         if not self.embedding_model_id:
             self.logger.error("Embedding model ID is not set.")
             return None
@@ -85,7 +88,7 @@ class CoHereProvider(LLMInterface):
         
         response = self.client.embed(
             model=self.embedding_model_id,
-            texts=[self.process_text(text)],
+            texts=[self.process_text(text) for text in texts],
             input_type=input_type,
             embedding_types=['float']
         )
@@ -96,40 +99,9 @@ class CoHereProvider(LLMInterface):
             self.logger.error("Failed to embed text.")
             return None
         
-        return response.embeddings.float[0]
+        return [ f for f in response.embeddings.float ]
 
-
-    async def embed_texts(self, texts: List[str], document_type: str = None):
-        if not self.client:
-            self.logger.error("Cohere client is not initialized.")
-            return None
-
-        if not self.embedding_model_id:
-            self.logger.error("Embedding model ID is not set.")
-            return None
-
-        input_type = CoHereEnum.DOCUMENT.value
-        if document_type == DocumentTypeEnum.QUERY.value:
-            input_type = CoHereEnum.QUERY.value
-
-        processed_texts = [self.process_text(text) for text in texts]
-
-        response = self.client.embed(
-            model=self.embedding_model_id,
-            texts=processed_texts,
-            input_type=input_type,
-            embedding_types=['float']
-        )
-
-        logging.info(f"Embedding response: {response}")
-
-        if response is None or not response.embeddings:
-            self.logger.error("Failed to embed texts.")
-            return None
-
-        return response.embeddings.float  #
-
-
+    
     def construct_prompt(self, prompt: str, role: str):
         return {
             "role": role,
