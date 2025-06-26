@@ -26,10 +26,6 @@ services:
     networks:
       - backend
 
-
-
-
-
 networks:
   backend:
 

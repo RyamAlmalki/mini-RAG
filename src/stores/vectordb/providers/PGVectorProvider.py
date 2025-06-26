@@ -33,7 +33,7 @@ class PGVectorProvider(VectorDBInterface):
 
     async def connect(self):
         # tell postgres to create extension pgvector
-        async with self.db_client as session:
+        async with self.db_client() as session:
             async with session.begin():
                 await session.execute(
                     sql_text("CREATE EXTENSION IF NOT EXISTS vector;")
@@ -46,7 +46,7 @@ class PGVectorProvider(VectorDBInterface):
 
     async def is_collection_exists(self, collection_name: str) -> bool:
         record = None
-        async with self.db_client as session:
+        async with self.db_client()as session:
             async with session.begin():
                 list_tbl = sql_text('SELECT * FROM pg_table WHERE tablename = : collection_name')
                 result = await session.execute(list_tbl, {'collection_name': collection_name})
@@ -58,7 +58,7 @@ class PGVectorProvider(VectorDBInterface):
 
     async def list_all_collections(self) -> List:
         records = []
-        async with self.db_client as session:
+        async with self.db_client() as session:
             async with session.begin():
                 list_tbl = sql_text('SELECT tablename FROM pg_tables WHERE tablename LIKE :prefix')
                 result = await session.execute(list_tbl, {'prefix': self.pgvector_table_prefix})
@@ -67,7 +67,7 @@ class PGVectorProvider(VectorDBInterface):
         return records
     
     async def get_collection_info(self, collection_name: str) -> dict:
-        async with self.db_client as session:
+        async with self.db_client() as session:
             async with session.begin():
                 table_info_sql = sql_text('''
                     SELECT schemaname, tablename, 
@@ -98,7 +98,7 @@ class PGVectorProvider(VectorDBInterface):
     
     async def delete_collection(self, collection_name: str):
         
-        async with self.db_client as session:
+        async with self.db_client() as session:
             async with session.begin():
                 self.logger.info(f"Deleting collection: {collection_name}")
 
@@ -142,7 +142,7 @@ class PGVectorProvider(VectorDBInterface):
 
     async def is_index_existed(self, collection_name: str) -> bool:
         index_name = self.default_index_name(collection_name)
-        async with self.db_client as session:
+        async with self.db_client() as session:
             async with session.begin():
                 
                 index_sql = sql_text(
@@ -165,7 +165,7 @@ class PGVectorProvider(VectorDBInterface):
         if is_index_existed:
             return False
         
-        async with self.db_client as session:
+        async with self.db_client() as session:
             async with session.begin():
                 count_sql = sql_text(
                     f'SELECT COUNT(*) FROM {collection_name}'
@@ -199,7 +199,7 @@ class PGVectorProvider(VectorDBInterface):
 
             index_name = self.default_index_name(collection_name)
 
-            async with self.db_client as session:
+            async with self.db_client() as session:
                 async with session.begin():
                     drop_index_sql = sql_text(
                         f'DROP INDEX IF EXISTS {index_name}'

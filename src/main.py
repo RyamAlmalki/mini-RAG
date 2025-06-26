@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
  
 
     llm_provider_factory = LLMProviderFactory(settings)
-    vectordb_provider_factory = VectorDBProviderFactory(settings)
+    vectordb_provider_factory = VectorDBProviderFactory(config=settings, db_client=app.db_client)
 
     app.generation_client = llm_provider_factory.create(settings.GENERATION_BACKEND)
     app.generation_client.set_generation_model(settings.GENERATION_MODEL_ID)
@@ -34,7 +34,6 @@ async def lifespan(app: FastAPI):
     app.embedding_client = llm_provider_factory.create(settings.EMBEDDING_BACKEND)
     app.embedding_client.set_embedding_model(settings.EMBEDDING_MODEL_ID, settings.EMBEDDING_MODEL_SIZE)
 
-    # <-- FIXED: Await here
     app.vector_db_client = await vectordb_provider_factory.create(provider=settings.VECTOR_DB_BACKEND)
     
     # Now this is safe, the instance is returned and connected (or connect called explicitly)
@@ -42,7 +41,7 @@ async def lifespan(app: FastAPI):
     
     app.template_parser = TemplateParser(
         language=settings.PRIMARY_LANGUAGE,
-        default_language=settings.DEFAULT_LAGUAGE
+        default_language=settings.DEFAULT_LANGUAGE
     )
     
     yield
