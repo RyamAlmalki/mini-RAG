@@ -12,7 +12,7 @@ from models.ChunkModel import ChunkModel
 from models.AssetModel import AssetModel
 from models.db_schemes import Assets
 from models.enums.AssetTypeEnum import AssetTypeEnum
-
+from controllers import NLPController
 
 router = APIRouter()
 
@@ -101,6 +101,14 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
 
     project_db = await project_model.get_project_or_create_one(project_id=project_id)
     
+
+    nlp_controller = await NLPController.create_instance(
+        vector_db_client = request.app.vector_db_client,
+        generation_client = request.app.generation_client,
+        embedding_client = request.app.embedding_client,
+        template_parser = request.app.template_parser,
+    )
+
     
     # Store the asset into the database
     asset_model = await AssetModel.create_instance(
@@ -155,7 +163,12 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
     )
 
     if do_reset == 1:
-        await chunk_model.delete_chunk_by_project_id(project_id=project_db.project_id)
+        # delete associated vectors collection
+        collection_name = nlp_controller.create_collection_name(project_id=project_db.project_id)
+        _ = await nlp_controller.vector_db_client.delete_collection(collection_name=collection_name)
+
+        # delete associated chunks
+        _ = await chunk_model.delete_chunk_by_project_id(project_id=project_db.project_id)
     
     for asset_id, file_id in project_files_ids.items():
         
