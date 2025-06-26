@@ -48,8 +48,8 @@ class PGVectorProvider(VectorDBInterface):
         record = None
         async with self.db_client()as session:
             async with session.begin():
-                list_tbl = sql_text('SELECT * FROM pg_table WHERE tablename = : collection_name')
-                result = await session.execute(list_tbl, {'collection_name': collection_name})
+                list_tbl = sql_text(f'SELECT * FROM pg_table WHERE tablename = {collection_name}')
+                result = await session.execute(list_tbl)
                 record = result.scalar_one_or_none()
             
         
@@ -69,18 +69,18 @@ class PGVectorProvider(VectorDBInterface):
     async def get_collection_info(self, collection_name: str) -> dict:
         async with self.db_client() as session:
             async with session.begin():
-                table_info_sql = sql_text('''
+                table_info_sql = sql_text(f'''
                     SELECT schemaname, tablename, 
                     tableowner, tablespace, hasindexes 
-                    FROM pg_tables WHERE tablename = :collection_name                       
+                    FROM pg_tables WHERE tablename = {collection_name}                     
                 ''')
                 
-                count_sql = sql_text('''
-                    SELECT COUNT(*) FROM :collection_name
+                count_sql = sql_text(f'''
+                    SELECT COUNT(*) FROM {collection_name}        
                 ''')
 
-                table_info_result = await session.execute(table_info_sql, {'collection_name': collection_name})
-                record_count = await session.execute(count_sql, {'collection_name': collection_name})
+                table_info_result = await session.execute(table_info_sql)
+                record_count = await session.execute(count_sql)
 
                 table_data = table_info_result.fetchone()
                 if not table_data:
@@ -146,13 +146,10 @@ class PGVectorProvider(VectorDBInterface):
             async with session.begin():
                 
                 index_sql = sql_text(
-                    'SELECT 1 FROM pg_indexes WHERE tablename = :collection_name AND indexname = :index_name'
+                    f'SELECT 1 FROM pg_indexes WHERE tablename = {collection_name} AND indexname = {index_name}'
                 )
                 
-                result = await session.execute(index_sql, {
-                    'collection_name': collection_name,
-                    'index_name': index_name
-                })
+                result = await session.execute(index_sql)
                 
                 return bool(result.scalar_one_or_none())
 

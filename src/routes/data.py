@@ -102,7 +102,7 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
     project_db = await project_model.get_project_or_create_one(project_id=project_id)
     
 
-    nlp_controller = await NLPController.create_instance(
+    nlp_controller = NLPController(
         vector_db_client = request.app.vector_db_client,
         generation_client = request.app.generation_client,
         embedding_client = request.app.embedding_client,
