@@ -48,8 +48,8 @@ class PGVectorProvider(VectorDBInterface):
         record = None
         async with self.db_client()as session:
             async with session.begin():
-                list_tbl = sql_text(f'SELECT * FROM pg_table WHERE tablename = {collection_name}')
-                result = await session.execute(list_tbl)
+                list_tbl = sql_text('SELECT * FROM pg_table WHERE tablename = :collection_name')
+                result = await session.execute(list_tbl, {'collection_name': collection_name})
                 record = result.scalar_one_or_none()
             
         
@@ -116,8 +116,8 @@ class PGVectorProvider(VectorDBInterface):
         if do_reset:
             _ = await self.delete_collection(collection_name=collection_name)
 
-        is_collection_existed = await self.is_collection_existed(collection_name=collection_name)
-        if not is_collection_existed:
+        is_collection_exists = await self.is_collection_exists(collection_name=collection_name)
+        if not is_collection_exists:
             self.logger.info(f"Creating collection: {collection_name}")
             async with self.db_client() as session:
                 async with session.begin():
