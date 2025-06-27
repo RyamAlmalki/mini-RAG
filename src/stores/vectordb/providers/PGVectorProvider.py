@@ -1,3 +1,4 @@
+import json
 from ..VectorDBInterface import VectorDBInterface
 from ..VectorDBEnum import (PgVectorTableSchemaEnum, 
                             PgVectorDistanceMethodEnum, 
@@ -48,7 +49,7 @@ class PGVectorProvider(VectorDBInterface):
         record = None
         async with self.db_client()as session:
             async with session.begin():
-                list_tbl = sql_text('SELECT * FROM pg_table WHERE tablename = :collection_name')
+                list_tbl = sql_text('SELECT * FROM pg_tables WHERE tablename = :collection_name')
                 result = await session.execute(list_tbl, {'collection_name': collection_name})
                 record = result.scalar_one_or_none()
             
@@ -123,12 +124,12 @@ class PGVectorProvider(VectorDBInterface):
                 async with session.begin():
                     create_sql = sql_text(
                         f'CREATE TABLE {collection_name} ('
-                            f'{PgVectorTableSchemaEnum.ID.value} bigserial PRIMARY KEY,'
+                            f'{PgVectorTableSchemaEnum.ID.value} bigserial PRIMARY KEY, '
                             f'{PgVectorTableSchemaEnum.TEXT.value} text, '
                             f'{PgVectorTableSchemaEnum.VECTOR.value} vector({embedding_size}), '
                             f'{PgVectorTableSchemaEnum.METADATA.value} jsonb DEFAULT \'{{}}\', '
                             f'{PgVectorTableSchemaEnum.CHUNK_ID.value} integer, '
-                            f'FOREIGN KEY ({PgVectorTableSchemaEnum.CHUNK_ID.value}) REFERENCES chunks(chunk_id)'
+                            f'FOREIGN KEY ({PgVectorTableSchemaEnum.CHUNK_ID.value}) REFERENCES chunks(chunks_id)'
                         ')'
                     )
                     await session.execute(create_sql)
@@ -223,7 +224,7 @@ class PGVectorProvider(VectorDBInterface):
             return False
 
 
-        async with self.db_client as session:
+        async with self.db_client() as session:
             async with session.begin():
                 insert_sql = sql_text(
                     f'INSERT INTO {collection_name} '
@@ -234,11 +235,12 @@ class PGVectorProvider(VectorDBInterface):
                     f'VALUES (:chunk_id, :text, :vector, :metadata)'
                 )
                 
+                metadata_json = json.dumps(metadata, ensure_ascii=False) if metadata is not None else '{}'
                 await session.execute(insert_sql, {
                     'chunk_id': record_id,
                     'text': text,
                     'vector': "[" + ",".join([str(v) for v in vector]) + "]",
-                    'metadata': metadata
+                    'metadata': metadata_json
                 })
 
                 await session.commit()
@@ -258,7 +260,7 @@ class PGVectorProvider(VectorDBInterface):
             self.logger.error("Vectors and record IDs must have the same length.")
             return False
 
-        async with self.db_client as session:
+        async with self.db_client() as session:
             async with session.begin():
                 for i in range(0, len(texts), batch_size):
                     batch_texts = texts[i:i + batch_size]
@@ -271,12 +273,13 @@ class PGVectorProvider(VectorDBInterface):
                     for _text, _vector, _metadata, _record_id in zip(
                         batch_texts, batch_vectors, batch_metadata, batch_record_ids
                     ):
+                        metadata_json = json.dumps(_metadata, ensure_ascii=False) if _metadata is not None else '{}'
                         values.append(
                             {
                                 'chunk_id': _record_id,
                                 'text': _text,
                                 'vector': "[" + ",".join([str(v) for v in _vector]) + "]",
-                                'metadata': _metadata
+                                'metadata': metadata_json
                             }
                         )
 
@@ -306,7 +309,7 @@ class PGVectorProvider(VectorDBInterface):
 
         vector = "[" + ",".join([str(v) for v in vector]) + "]"
 
-        async with self.db_client as session:
+        async with self.db_client() as session:
             async with session.begin():
                 search_sql = sql_text(f'SELECT {PgVectorTableSchemaEnum.TEXT.value} as text, 1 - ({PgVectorTableSchemaEnum.VECTOR.value} <=> :vector) as score'
                         f' FROM {collection_name}'

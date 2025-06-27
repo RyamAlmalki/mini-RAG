@@ -64,7 +64,7 @@ async def index_project(request: Request, project_id: int, push_request: PushReq
     )
 
     # setup batching 
-    total_chunks_count = await ChunkModel.get_total_chunks_count(
+    total_chunks_count = await chunk_model.get_total_chunks_count(
         project_id=project.project_id
     )
 

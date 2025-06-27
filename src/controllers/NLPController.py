@@ -50,8 +50,8 @@ class NLPController(BaseController):
             batch_texts = texts[i:i+batch_size]
 
             # Assume your client has an async batch embed method
-            batch_vectors = await self.embedding_client.embed_text(
-                texts=batch_texts,
+            batch_vectors = self.embedding_client.embed_text(
+                text=batch_texts,
                 document_type=DocumentTypeEnum.DOCUMENT.value
             )
             vectors.extend(batch_vectors)

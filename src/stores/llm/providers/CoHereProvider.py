@@ -77,6 +77,11 @@ class CoHereProvider(LLMInterface):
         
         if isinstance(text, str):
             texts = [text]
+        elif isinstance(text, list):
+            texts = text
+        else:
+            self.logger.error("Invalid input type for text.")
+            return None
             
         if not self.embedding_model_id:
             self.logger.error("Embedding model ID is not set.")
