@@ -70,17 +70,17 @@ class PGVectorProvider(VectorDBInterface):
     async def get_collection_info(self, collection_name: str) -> dict:
         async with self.db_client() as session:
             async with session.begin():
-                table_info_sql = sql_text(f'''
+                table_info_sql = sql_text('''
                     SELECT schemaname, tablename, 
                     tableowner, tablespace, hasindexes 
-                    FROM pg_tables WHERE tablename = {collection_name}                     
+                    FROM pg_tables WHERE tablename = :collection_name                  
                 ''')
                 
                 count_sql = sql_text(f'''
                     SELECT COUNT(*) FROM {collection_name}        
                 ''')
 
-                table_info_result = await session.execute(table_info_sql)
+                table_info_result = await session.execute(table_info_sql, {'collection_name': collection_name})
                 record_count = await session.execute(count_sql)
 
                 table_data = table_info_result.fetchone()
@@ -174,7 +174,7 @@ class PGVectorProvider(VectorDBInterface):
                 result = await session.execute(count_sql)
                 record_count = result.scalar_one()
 
-                self.logger.info(f"Record count: {record_count}, Threshold: {self.index_threshold}")
+
                 
                 if record_count < self.index_threshold:
                     self.logger.info(f"Collection {collection_name} has only {record_count} records, skipping index creation.")

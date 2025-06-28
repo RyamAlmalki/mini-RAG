@@ -8,6 +8,12 @@ from stores.llm.templates.template_parser import TemplateParser
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,  # or DEBUG if you want even more verbosity
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 
 @asynccontextmanager
