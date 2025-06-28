@@ -1,6 +1,6 @@
 import json
 from ..VectorDBInterface import VectorDBInterface
-from ..VectorDBEnum import (PgVectorTableSchemaEnum, 
+from ..VectorDBEnum import (DistanceMethodEnum, PgVectorTableSchemaEnum, 
                             PgVectorDistanceMethodEnum, 
                             PgVectorIndexTypeEnum)
 import logging
@@ -26,9 +26,9 @@ class PGVectorProvider(VectorDBInterface):
 
         self.default_index_name = lambda collection_name: f"{self.pgvector_table_prefix}_{collection_name}_index"
         
-        if distance_method == PgVectorDistanceMethodEnum.COSINE.value:
+        if distance_method == DistanceMethodEnum.COSINE.value:
             self.distance_method = PgVectorDistanceMethodEnum.COSINE.value
-        elif distance_method == PgVectorDistanceMethodEnum.DOT.value:
+        elif distance_method == DistanceMethodEnum.DOT.value:
             self.distance_method = PgVectorDistanceMethodEnum.DOT.value
         
 
@@ -147,10 +147,13 @@ class PGVectorProvider(VectorDBInterface):
             async with session.begin():
                 
                 index_sql = sql_text(
-                    f'SELECT 1 FROM pg_indexes WHERE tablename = {collection_name} AND indexname = {index_name}'
+                    f'SELECT 1 FROM pg_indexes WHERE tablename = :collection_name AND indexname = :index_name'
                 )
                 
-                result = await session.execute(index_sql)
+                result = await session.execute(index_sql, {
+                    'collection_name': collection_name,
+                    'index_name': index_name
+                })
                 
                 return bool(result.scalar_one_or_none())
 
@@ -171,11 +174,13 @@ class PGVectorProvider(VectorDBInterface):
                 result = await session.execute(count_sql)
                 record_count = result.scalar_one()
 
+                self.logger.info(f"Record count: {record_count}, Threshold: {self.index_threshold}")
+                
                 if record_count < self.index_threshold:
                     self.logger.info(f"Collection {collection_name} has only {record_count} records, skipping index creation.")
                     return False
 
-                self.logger.info(f"Creating index for collection: {collection_name} with type: {index_type}")
+                self.logger.info(f"START: Creating vector index for collection: {collection_name}")
                 
                 index_name = self.default_index_name(collection_name)
                 create_index_sql = sql_text(
@@ -185,7 +190,8 @@ class PGVectorProvider(VectorDBInterface):
                 )
                 
                 await session.execute(create_index_sql)
-                await session.commit()
+                
+                self.logger.info(f"END: Created vector index for collection: {collection_name}")
 
 
     async def reset_vecor_index(self, collection_name: str, index_type: str = PgVectorIndexTypeEnum.HNSW.value) -> bool:
@@ -244,6 +250,8 @@ class PGVectorProvider(VectorDBInterface):
                 })
 
                 await session.commit()
+        
+        await self.create_vector_index(collection_name=collection_name)
 
         return True
     
@@ -294,6 +302,8 @@ class PGVectorProvider(VectorDBInterface):
                     )
 
                     await session.execute(batch_insert_sql, values)
+                    
+        await self.create_vector_index(collection_name=collection_name)
 
         return True
     
