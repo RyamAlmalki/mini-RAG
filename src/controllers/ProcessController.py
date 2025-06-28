@@ -1,11 +1,9 @@
-import logging
 from .BaseController import BaseController
 from .ProjectController import ProjectController
 import os
 from langchain_community.document_loaders import TextLoader
 from langchain_community.document_loaders import PyMuPDFLoader
 from models import ProcessingEnum
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from typing import List
 from dataclasses import dataclass
 
@@ -56,12 +54,6 @@ class ProcessController(BaseController):
         if file_contents is None:
             logger.error(f"No content found for file: {file_id}")
             return None
-       
-        text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                length_function=len
-        )
 
         file_contents_texts = [
             record.page_content
