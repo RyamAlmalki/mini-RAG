@@ -71,8 +71,7 @@ class PGVectorProvider(VectorDBInterface):
         async with self.db_client() as session:
             async with session.begin():
                 table_info_sql = sql_text('''
-                    SELECT schemaname, tablename, 
-                    tableowner, tablespace, hasindexes 
+                    SELECT schemaname, tablename, tableowner, tablespace, hasindexes
                     FROM pg_tables WHERE tablename = :collection_name                  
                 ''')
                 
@@ -86,14 +85,16 @@ class PGVectorProvider(VectorDBInterface):
                 table_data = table_info_result.fetchone()
                 if not table_data:
                     return None
-                
-                count_result = record_count.fetchone()
-                if not count_result:
-                    return None
-                
+               
                 return{
-                    "table_info": dict(table_data),
-                    "record_count": count_result
+                     "table_info": {
+                        "schemaname": table_data[0],
+                        "tablename": table_data[1],
+                        "tableowner": table_data[2],
+                        "tablespace": table_data[3],
+                        "hasindexes": table_data[4],
+                    },
+                    "record_count": record_count.scalar_one()
                 }
             
     
