@@ -6,7 +6,9 @@ from langchain_community.document_loaders import PyMuPDFLoader
 from models import ProcessingEnum
 from typing import List
 from dataclasses import dataclass
+import logging
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class Document:
