@@ -5,10 +5,10 @@ import time
 
 # Define metrics
 
-# Ex: 1,542 successful GET requests to /login.
+# Example: 1,542 successful GET requests to /login.
 REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP Requests', ['method', 'endpoint', 'status'])
 
-# Ex: 1,000 requests took < 0.1 seconds,
+# Example: 1,000 requests took < 0.1 seconds,
 REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP Request Latency', ['method', 'endpoint'])
 
 
