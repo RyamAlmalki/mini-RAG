@@ -14,4 +14,24 @@ REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP Request Laten
 
 class PrometheusMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        pass
+        
+        start_time = time.time()
+
+        response = await call_next(request)
+
+        duration = time.time() - start_time
+        endpoint = request.url.path
+
+        REQUEST_COUNT.labels(method=request.method, endpoint=endpoint, status=response.status_code).inc()
+        REQUEST_LATENCY.labels(method=request.method, endpoint=endpoint).observe(duration)
+
+        return response
+    
+
+def setup_metrics(self, app: FastAPI):
+
+    app.add_middleware(PrometheusMiddleware)
+
+    @app.get("/metrics_hhsffs_hjoajed", include_in_schema=False)
+    def metrics():
+        return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
