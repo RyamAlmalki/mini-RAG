@@ -7,8 +7,9 @@ from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
 from stores.llm.templates.template_parser import TemplateParser
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-
+from utils.metrics import setup_metrics
 import logging
+
 
 logging.basicConfig(
     level=logging.INFO,  # or DEBUG if you want even more verbosity
@@ -61,6 +62,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+setup_metrics(app)
 
 app.include_router(base.router, prefix="/v1/base", tags=["base"])
 app.include_router(data.router, prefix="/v1/data", tags=["data"])
