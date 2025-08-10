@@ -5,7 +5,13 @@ services:
 
   # PostgreSQL Service (pgvector)
   pgvector:
-    image: pgvector/
+    image: pgvector/pgvector:latest
+    container_name: pgvector
+    ports: 
+      - "5432:5432"
+    volumes: 
+      - 'pgvector:/var/lib/postgresql/data'
+
   # Qdrant (VectorDB)
 
   # prometheus Monitoring 
