@@ -47,6 +47,7 @@ services:
       - "9090:9090"
     volumes:
       - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - backend
     restart: always
