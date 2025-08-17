@@ -25,4 +25,11 @@ RUN mkdir -p models/db_schema/minirag
 
 COPY docker/minirag/alembic.ini /app/models/db_schema/minirag/
 
-RUN alembic upgrade head
+COPY docker/minirag/enterypoint.sh /enterypoint.sh
+
+RUN chmod +x /enterypoint.sh
+
+ENTRYPOINT [ "/enterypoint.sh" ]
+
+# Command to run the application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
