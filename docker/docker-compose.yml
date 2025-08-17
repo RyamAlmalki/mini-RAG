@@ -1,6 +1,9 @@
 services:
   # FastAPI application
   fastapi:
+    build:
+      context: ..
+      dockerfile: docker/minirag/Dockerfile
     container_name: fastapi
     ports:
       - "8000:8000"
@@ -14,11 +17,8 @@ services:
       - ./env/.env.app
 
   
-  
 
   # Nginx Service 
-
-
 
 
 
