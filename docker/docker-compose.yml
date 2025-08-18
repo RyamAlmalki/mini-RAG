@@ -133,6 +133,12 @@ services:
       - backend
     restart: always
 
+  networks:
+    backend:
+      driver: bridge
 
-
-
+  volumes:
+    pgvector:
+    qdrant_data:
+    prometheus_data:
+    grafana_data:
