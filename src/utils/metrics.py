@@ -28,7 +28,7 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         return response
     
 
-def setup_metrics(self, app: FastAPI):
+def setup_metrics(app: FastAPI):
 
     app.add_middleware(PrometheusMiddleware)
 

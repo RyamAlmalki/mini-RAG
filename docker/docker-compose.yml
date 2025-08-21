@@ -8,6 +8,8 @@ services:
     container_name: fastapi
     ports:
       - "8000:8000"
+    volumes:
+      - fastapi_data:/app/assets
     networks:
       - backend
     restart: always
@@ -33,7 +35,7 @@ services:
 
   # PostgreSQL Service (pgvector)
   pgvector:
-    image: pgvector/pgvector:latest
+    image: pgvector/pgvector:0.8.0-pg17-bookworm
     container_name: pgvector
     ports: 
       - "5432:5432"
@@ -44,9 +46,8 @@ services:
     networks:
       - backend
     restart: always
-
     healthcheck:
-      test: ["executable", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -119,7 +120,7 @@ services:
       - /sys:/host/sys:ro
       - /:/host:ro
 
-  # PostgreSQL Exporter for Postgres metrics 
+  # This service collects metrics from your Postgres database, and exposes them.
   postgres_exporter:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: postgres_exporter
@@ -133,12 +134,13 @@ services:
       - backend
     restart: always
 
-  networks:
-    backend:
-      driver: bridge
+networks:
+  backend:
+    driver: bridge
 
-  volumes:
-    pgvector:
-    qdrant_data:
-    prometheus_data:
-    grafana_data:
+volumes:
+  fastapi_data:
+  pgvector:
+  qdrant_data:
+  prometheus_data:
+  grafana_data:
