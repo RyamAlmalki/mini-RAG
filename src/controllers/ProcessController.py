@@ -6,6 +6,7 @@ from langchain_community.document_loaders import PyMuPDFLoader
 from models import ProcessingEnum
 from typing import List
 from dataclasses import dataclass
+from langchain.schema import Document  
 import logging
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ class ProcessController(BaseController):
         
         file_extension = self.get_file_extension(file_path)
         
-        if file_extension == ProcessingEnum.TXT.value:
+        if file_extension == ProcessingEnum.TXT.value or file_extension == ProcessingEnum.PY.value:
             return TextLoader(file_path, encoding='utf-8')
         elif file_extension == ProcessingEnum.PDF.value:
             return PyMuPDFLoader(file_path)
@@ -74,9 +75,6 @@ class ProcessController(BaseController):
         )
 
         return chunks
-    
-
-    from langchain.schema import Document  
 
 
     def process_simpler_splitter(self, texts: List[str], metadatas: List[dict] = None, chunk_size: int = 100, splitter_tag: str = "\n"):
