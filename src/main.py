@@ -12,7 +12,7 @@ import logging
 
 
 logging.basicConfig(
-    level=logging.INFO,  # or DEBUG if you want even more verbosity
+    level=logging.INFO, 
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
