@@ -14,7 +14,6 @@ class VectorDBProviderFactory:
     async def create(self, provider: str):
         if provider == VectorDBEnum.QDRANT.value:
             qdrant_db_clint = self.base_controller.get_database_path(database_name=self.config.VECTOR_DB_PATH)
-            
             return QdrantDBProvider(
                 db_client=qdrant_db_clint,
                 distance_method=self.config.VECTOR_DB_DISTANCE_METHOD,
@@ -28,8 +27,6 @@ class VectorDBProviderFactory:
                 default_vector_size=self.config.EMBEDDING_MODEL_SIZE,
                 index_threshold=self.config.VECTOR_DB_PGVECTOR_INDEX_THRESHOLD,
             )
-
-
 
         return None
     
