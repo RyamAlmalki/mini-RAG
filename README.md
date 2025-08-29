@@ -1,12 +1,3 @@
-Got it 👍 You want to clearly show that there are **two alternative ways** to run the project:
-
-1. **Using MiniConda (local Python environment)**
-2. **Using Docker Compose**
-
-Here’s how you can rewrite your README section so it’s super clear:
-
----
-
 # 👋🏻 Introduction
 
 This is a minimal implementation of the RAG model for question answering.
