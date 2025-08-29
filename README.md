@@ -9,7 +9,6 @@ You can run this project in **two ways**:
 * **Option 1: Using MiniConda (recommended for local development)**
 * **Option 2: Using Docker Compose (recommended for deployment / containerized setup)**
 
----
 
 ### 🟢 Option 1: Run with MiniConda
 
@@ -52,7 +51,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 5000
 
 ---
 
-### 🔵 Option 2: Run with Docker Compose
+### 🔵 Option 2: Run Docker Compose Services
 
 1. Navigate to the docker folder:
 
@@ -73,9 +72,3 @@ cp .env.example .env
 ```bash
 sudo docker compose up -d
 ```
-
----
-
-✨ That way it’s very clear: **Option 1 (MiniConda)** vs **Option 2 (Docker)**.
-
-Do you want me to also add a **decision tip** (like "use MiniConda for dev, Docker for prod") at the top to guide users which to pick?
