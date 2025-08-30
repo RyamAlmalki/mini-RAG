@@ -2,7 +2,6 @@
 
 This is a minimal implementation of the RAG model for question answering.
 
----
 
 ## 🔹 Endpoints Overview
 
@@ -15,7 +14,6 @@ This is a minimal implementation of the RAG model for question answering.
 | GET  | `/v1/nlp/index/search/{project_id}` | `text` (str)<br>`limit` (int, default=5) | Search the indexed project data using semantic similarity (returns relevant chunks). |
 | GET  | `/v1/nlp/index/answer/{project_id}` | `text` (str)<br>`limit` (int, default=5) | Perform Retrieval-Augmented Generation (RAG): retrieves relevant chunks and generates a natural language answer with context. |
 
----
 
 ## 🚀 Getting Started
 
