@@ -4,13 +4,6 @@ This is a minimal implementation of the RAG model for question answering.
 
 ## 🚀 Getting Started
 
-You can run this project in **two ways**:
-
-* **Option 1: Using MiniConda (recommended for local development)**
-* **Option 2: Using Docker Compose (recommended for deployment / containerized setup)**
-
----
-
 ### 🟢 Option 1: Run with MiniConda
 
 * Python 3.8 or later
