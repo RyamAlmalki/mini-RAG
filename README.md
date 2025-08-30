@@ -1,6 +1,7 @@
+
 ## 👋🏻 Introduction
 
-This is a minimal implementation of the RAG model for question answering.
+![Drowsiness Detection](https://github.com/RyamAlmalki/mini-RAG/blob/master/rag_pipline.jpg)
 
 
 ## 🔹 Endpoints Overview
