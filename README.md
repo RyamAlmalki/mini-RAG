@@ -1,7 +1,8 @@
 
 ## 👋🏻 Introduction
 
-![Drowsiness Detection](https://github.com/RyamAlmalki/mini-RAG/blob/master/rag_pipline.jpg)
+<img src="https://github.com/RyamAlmalki/mini-RAG/blob/master/rag_pipline.jpg" height="300"/>
+
 
 
 ## 🔹 Endpoints Overview
