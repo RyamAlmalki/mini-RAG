@@ -1,12 +1,11 @@
 
-<div align="center">
-
 ## 👋🏻 Introduction
+
+<div align="center">
 
 <img src="https://github.com/RyamAlmalki/mini-RAG/blob/master/rag_pipline.jpg" height="300"/>
 
 </div>
-
 
 
 ## 🔹 Endpoints Overview
